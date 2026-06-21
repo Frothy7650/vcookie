@@ -2,8 +2,10 @@ module vcookie
 
 import net.http
 import strconv
+import time
 
 pub struct Cookie {
+pub mut:
   domain              string
   include_subdomains  bool
   path                string
@@ -11,6 +13,7 @@ pub struct Cookie {
   expiry              i64
   name                string
   value               string
+  raw                 string
 }
 
 pub fn parse(file string) ![]Cookie {
@@ -42,6 +45,7 @@ pub fn parse(file string) ![]Cookie {
       }
       name: parts[5]
       value: parts[6]
+      raw: line
     }
   }
 
@@ -84,6 +88,26 @@ pub fn from_net_cookies(net_cookies []http.Cookie) ![]Cookie {
   }
 
   return cookies
+}
+
+pub fn to_net_cookies(cookies []Cookie) ![]http.Cookie {
+  mut net_cookies := []http.Cookie{}
+
+  for cookie in cookies {
+    net_cookies << http.Cookie{
+      name: cookie.name
+      value: cookie.value
+      path: cookie.path
+      domain: cookie.domain
+      expires: time.unix(cookie.expiry)
+      raw_expires: cookie.expiry.str()
+      max_age: 0
+      http_only: cookie.https_only
+      raw: cookie.raw
+    }
+  }
+
+  return net_cookies
 }
 
 fn to_bool(s string) !bool {
