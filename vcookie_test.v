@@ -82,13 +82,13 @@ fn test_to_map_overwrites_duplicate_names() {
 fn test_from_net_http_cookies() {
 	net_cookies := [
 		http.Cookie{
-			name: 'sid'
-			value: 'xyz'
-			path: '/'
-			domain: 'example.com'
-			secure: true
+			name:    'sid'
+			value:   'xyz'
+			path:    '/'
+			domain:  'example.com'
+			secure:  true
 			expires: time.now()
-		}
+		},
 	]
 
 	cookies := from_net_cookies(net_cookies) or {

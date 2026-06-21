@@ -6,114 +6,114 @@ import time
 
 pub struct Cookie {
 pub mut:
-  domain              string
-  include_subdomains  bool
-  path                string
-  https_only          bool
-  expiry              i64
-  name                string
-  value               string
-  raw                 string
+	domain             string
+	include_subdomains bool
+	path               string
+	https_only         bool
+	expiry             i64
+	name               string
+	value              string
+	raw                string
 }
 
 pub fn parse(file string) ![]Cookie {
-  mut cookies := []Cookie{}
-  lines := file.split_into_lines()
+	mut cookies := []Cookie{}
+	lines := file.split_into_lines()
 
-  for line in lines {
-    if line.len == 0 || line.starts_with('#') {
-      continue
-    }
+	for line in lines {
+		if line.len == 0 || line.starts_with('#') {
+			continue
+		}
 
-    parts := line.split_nth('\t', 7)
+		parts := line.split_nth('\t', 7)
 
-    if parts.len < 7 {
-      return error('invalid cookie line: ${line}')
-    }
+		if parts.len < 7 {
+			return error('invalid cookie line: ${line}')
+		}
 
-    cookies << Cookie{
-      domain: parts[0]
-      include_subdomains: to_bool(parts[1]) or {
-        return err
-      }
-      path: parts[2]
-      https_only: to_bool(parts[3]) or {
-        return err
-      }
-      expiry: strconv.atoi64(parts[4]) or {
-        return error('invalid expiry: ${parts[4]}')
-      }
-      name: parts[5]
-      value: parts[6]
-      raw: line
-    }
-  }
+		cookies << Cookie{
+			domain:             parts[0]
+			include_subdomains: to_bool(parts[1]) or { return err }
+			path:               parts[2]
+			https_only:         to_bool(parts[3]) or { return err }
+			expiry:             strconv.atoi64(parts[4]) or {
+				return error('invalid expiry: ${parts[4]}')
+			}
+			name:               parts[5]
+			value:              parts[6]
+			raw:                line
+		}
+	}
 
-  return cookies
+	return cookies
 }
 
 pub fn emit(cookies []Cookie) !string {
-  mut file := ''
+	mut file := ''
 
-  for cookie in cookies {
-    file += '${cookie.domain}\t${cookie.include_subdomains.str().to_upper()}\t${cookie.path}\t${cookie.https_only.str().to_upper()}\t${cookie.expiry}\t${cookie.name}\t${cookie.value}\n'
-  }
+	for cookie in cookies {
+		file += '${cookie.domain}\t${cookie.include_subdomains.str().to_upper()}\t${cookie.path}\t${cookie.https_only.str().to_upper()}\t${cookie.expiry}\t${cookie.name}\t${cookie.value}\n'
+	}
 
-  return file
+	return file
 }
 
 pub fn (cookies []Cookie) to_map() map[string]string {
-  mut cookies_map := map[string]string{}
+	mut cookies_map := map[string]string{}
 
-  for cookie in cookies {
-    cookies_map[cookie.name] = cookie.value
-  }
+	for cookie in cookies {
+		cookies_map[cookie.name] = cookie.value
+	}
 
-  return cookies_map
+	return cookies_map
 }
 
 pub fn from_net_cookies(net_cookies []http.Cookie) ![]Cookie {
-  mut cookies := []Cookie{}
+	mut cookies := []Cookie{}
 
-  for net_cookie in net_cookies {
-    cookies << Cookie{
-      domain: net_cookie.domain
-      include_subdomains: false // not provided by net.http
-      path: net_cookie.path
-      https_only: net_cookie.secure
-      expiry: net_cookie.expires.unix()
-      name: net_cookie.name
-      value: net_cookie.value
-    }
-  }
+	for net_cookie in net_cookies {
+		cookies << Cookie{
+			domain:             net_cookie.domain
+			include_subdomains: false // not provided by net.http
+			path:               net_cookie.path
+			https_only:         net_cookie.secure
+			expiry:             if net_cookie.expires.is_zero() {
+				0
+			} else {
+				net_cookie.expires.unix()
+			}
+			name:               net_cookie.name
+			value:              net_cookie.value
+		}
+	}
 
-  return cookies
+	return cookies
 }
 
 pub fn to_net_cookies(cookies []Cookie) ![]http.Cookie {
-  mut net_cookies := []http.Cookie{}
+	mut net_cookies := []http.Cookie{}
 
-  for cookie in cookies {
-    net_cookies << http.Cookie{
-      name: cookie.name
-      value: cookie.value
-      path: cookie.path
-      domain: cookie.domain
-      expires: time.unix(cookie.expiry)
-      raw_expires: cookie.expiry.str()
-      max_age: 0
-      http_only: cookie.https_only
-      raw: cookie.raw
-    }
-  }
+	for cookie in cookies {
+		net_cookies << http.Cookie{
+			name:        cookie.name
+			value:       cookie.value
+			path:        cookie.path
+			domain:      cookie.domain
+			expires:     time.unix(cookie.expiry)
+			raw_expires: cookie.expiry.str()
+			max_age:     0
+			http_only:   cookie.https_only
+			raw:         cookie.raw
+		}
+	}
 
-  return net_cookies
+	return net_cookies
 }
 
 fn to_bool(s string) !bool {
-  return match s {
-    'TRUE' { true }
-    'FALSE' { false }
-    else { error('invalid bool: ${s}') }
-  }
+	return match s {
+		'TRUE' { true }
+		'FALSE' { false }
+		else { error('invalid bool: ${s}') }
+	}
 }
