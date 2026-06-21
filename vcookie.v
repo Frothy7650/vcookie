@@ -58,7 +58,7 @@ pub fn emit(cookies []Cookie) !string {
   return file
 }
 
-pub fn (mut cookies []Cookie) to_map() map[string]string {
+pub fn (cookies []Cookie) to_map() map[string]string {
   mut cookies_map := map[string]string{}
 
   for cookie in cookies {
